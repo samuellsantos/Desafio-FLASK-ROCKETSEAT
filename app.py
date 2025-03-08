@@ -62,5 +62,21 @@ def add_refeicao():
     return jsonify({"message": "Dados inválidos"}), 401
 
 
+@app.route('/refeicoes', methods=['GET'])
+@login_required
+def listar_refeicoes():
+    data = db.session.query(Refeicao).filter(Refeicao.nome == current_user.username).all()
+    if data:
+        refeicoes_json = [
+            {
+                "descricao": i.descricao,
+                "data_hora": i.data_hora,
+                "dieta": i.dieta
+            } for i in data
+        ]
+    
+    return jsonify(refeicoes_json)
+
+
 if __name__ == "__main__":
     app.run(debug=True)
