@@ -69,14 +69,64 @@ def listar_refeicoes():
     if data:
         refeicoes_json = [
             {
+                "id": i.id,
                 "descricao": i.descricao,
                 "data_hora": i.data_hora,
                 "dieta": i.dieta
             } for i in data
         ]
-    
-    return jsonify(refeicoes_json)
+        return jsonify(refeicoes_json)
+    return jsonify({"message": "Nenhuma refeição encontrada."}), 404
 
+@app.route('/refeicao/<int:id>', methods=['GET'])
+@login_required
+def unica_refeicao(id):
+    data =  db.session.query(Refeicao).filter(Refeicao.id == id and current_user.username == Refeicao.nome).all()
+    if data:
+        refeicao_json = [
+            {
+                "id": i.id,
+                "descricao": i.descricao,
+                "data_hora": i.data_hora,
+                "dieta": i.dieta
+            } for i in data
+        ]
+        return jsonify(refeicao_json)
+    return jsonify({"message": "Refeicao não encontrada."})
+    
+
+@app.route('/delete/<int:id>', methods=['DELETE'])
+@login_required
+def deletar_refeicao(id):
+    data = db.session.query(Refeicao).filter(Refeicao.id == id and Refeicao.nome == current_user.username).first()
+    if data:
+        db.session.delete(data)
+        db.session.commit()
+        return jsonify({"message": f"Refeicao {data.descricao} foi deletada."})
+    return jsonify({"message": "Não há refeições para deletar."})
+
+
+@app.route('/atualizarRefeicao/<int:id>', methods=['PUT'])
+@login_required
+def atualizar(id):
+    data = request.json
+    descricao = data.get("descricao")
+    data_hora_str = data.get("data_hora")
+    data_hora = datetime.strptime(data_hora_str, '%d-%m-%y %H:%M')
+    dieta = data.get("dieta")
+    refeicao = db.session.query(Refeicao).filter(Refeicao.id == id and Refeicao.nome == current_user.username).first()
+    
+    if data:
+        if descricao:
+            refeicao.descricao = descricao
+        if dieta:
+            refeicao.dieta = dieta
+        if data_hora:
+            refeicao.data_hora = data_hora
+        db.session.commit()
+        return jsonify({"message": "Atualização realizada com sucesso!"})
+
+    
 
 if __name__ == "__main__":
     app.run(debug=True)
